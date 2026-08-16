@@ -1,0 +1,320 @@
+.payment-list-container {
+  animation: fadeIn 0.3s ease;
+}
+
+.payment-list-container h2 {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  color: var(--text-dark);
+  text-align: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-light);
+}
+
+.payments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payment-card {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  border-left: 4px solid var(--primary);
+}
+
+.payment-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(16, 185, 129, 0.03) 100%);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.payment-header:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
+}
+
+.payment-info {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex: 1;
+}
+
+.payment-info .date {
+  font-weight: 500;
+  color: var(--text-dark);
+  font-size: 1rem;
+}
+
+.payment-info .amount {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.payment-info .count {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.expand-icon {
+  color: var(--text-light);
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.payment-shootings {
+  padding: 1.5rem;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border);
+}
+
+.payment-shootings h4 {
+  margin-bottom: 1rem;
+  color: var(--text-dark);
+  font-size: 0.95rem;
+}
+
+.associated-shooting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg-white);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.associated-shooting .name {
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+.associated-shooting .amount {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.payment-actions {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: var(--bg-light);
+}
+
+.btn-delete {
+  flex: 1;
+  padding: 0.6rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-info {
+    gap: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .payment-info .amount {
+    font-size: 1.1rem;
+  }
+}
+
+/* shooting-manager-frontend/src/components/styles/PaymentList.css */
+
+.payment-list-container {
+  max-width: 800px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease;
+}
+
+.payment-list-container h2 {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  color: var(--text-dark);
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+.payments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payment-card {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+}
+
+.payment-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.payment-header {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.payment-info {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex: 1;
+}
+
+.payment-date {
+  font-size: 0.95rem;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.payment-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--secondary);
+}
+
+.expand-icon {
+  color: var(--text-light);
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+}
+
+.payment-details {
+  padding: 1.5rem;
+  background: var(--bg-light);
+}
+
+.details-content {
+  margin-bottom: 1.5rem;
+}
+
+.details-content p {
+  color: var(--text-dark);
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.shoots-list {
+  margin-top: 1rem;
+}
+
+.shoots-list strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-dark);
+}
+
+.shoots-list ul {
+  list-style: none;
+  padding-left: 1rem;
+}
+
+.shoots-list li {
+  padding: 0.5rem 0;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.shoots-list li:last-child {
+  border-bottom: none;
+}
+
+.btn-delete {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .payment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .payment-info {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .payment-amount {
+    font-size: 1.3rem;
+  }
+}
