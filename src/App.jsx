@@ -9,7 +9,7 @@ import NewOption from './components/NewOption';
 import ExportForm from './components/ExportForm';
 import './App.css';
 
-const API_URL = 'process.env.REACT_APP_API_URL' || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 function App() {
   const [shootings, setShooting] = useState([]);
