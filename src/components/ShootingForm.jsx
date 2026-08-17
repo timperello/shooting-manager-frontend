@@ -31,6 +31,7 @@ function ShootingForm({ onSubmit, initialData = null, isEditing = false, types =
         type_id: types[0].id
       }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [types]);
 
   useEffect(() => {

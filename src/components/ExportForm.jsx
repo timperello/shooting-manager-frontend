@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import fontFile from '../fonts/NotoSansKR.ttf';
+// eslint-disable-next-line no-unused-vars
 import { formatWon } from '../utils/formatters';
 import '../styles/ExportForm.css';
 
