@@ -34,9 +34,6 @@ function PaymentList({ payments, onDelete }) {
                   {formatWon(payment.montant)}
                 </span>
               </div>
-              <span className="expand-icon">
-                {expandedId === payment.id ? '▼' : '▶'}
-              </span>
             </div>
 
             {expandedId === payment.id && (
