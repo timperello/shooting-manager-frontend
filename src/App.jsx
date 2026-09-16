@@ -1,5 +1,6 @@
 // shooting-manager-frontend/src/App.jsx
 import React, { useState, useEffect } from 'react';
+import BottomNavigation from './components/BottomNavigation';
 import Dashboard from './components/Dashboard';
 import ShootingForm from './components/ShootingForm';
 import ShootingList from './components/ShootingList';
@@ -10,7 +11,7 @@ import ExportForm from './components/ExportForm';
 import './App.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-console.log(process.env.REACT_APP_API_URL);
+
 function App() {
   const [shootings, setShooting] = useState([]);
   const [stats, setStats] = useState(null);
@@ -19,6 +20,7 @@ function App() {
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // Fetch tous les shootings, stats et types
   const fetchData = async () => {
@@ -47,6 +49,17 @@ function App() {
     }
   };
 
+  // Détecter mobile/desktop
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Charger les données au démarrage
   useEffect(() => {
     fetchData();
   }, []);
@@ -79,7 +92,7 @@ function App() {
       if (response.ok) {
         fetchData();
         setEditingId(null);
-        setActiveTab('list-shootings');
+        setActiveTab('shootings');
       }
     } catch (error) {
       console.error('Erreur update:', error);
@@ -142,129 +155,145 @@ function App() {
     }
   };
 
-  return (
-    <div className="app">
-      {/* Header */}
-      <header className="app-header">
-        <div className="header-content">
-          <h1>📸 Shooting Manager</h1>
-          <p className="tagline">Gère tes shoots, suis ton argent</p>
-        </div>
-      </header>
+  const renderContent = () => {
+    if (loading) {
+      return <div className="loading">Chargement...</div>;
+    }
 
-      {/* Navigation Tabs */}
-      <nav className="nav-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          📊 Dashboard
-        </button>
-
-        <button
-          className={`tab-btn ${activeTab === 'new' ? 'active' : ''}`}
-          onClick={() => setActiveTab('new')}
-        >
-          ➕ Nouveau
-        </button>
-
-        <button
-          className={`tab-btn ${activeTab === 'list-shootings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('list-shootings')}
-        >
-          📋 Shoots
-        </button>
-
-        <button
-          className={`tab-btn ${activeTab === 'list-payments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('list-payments')}
-        >
-          💳 Paiements
-        </button>
-
-        <button
-          className={`tab-btn ${activeTab === 'export' ? 'active' : ''}`}
-          onClick={() => setActiveTab('export')}
-        >
-          📥 Exporter
-        </button>
-      </nav>
-
-      {/* Main Content */}
-      <main className="main-content">
-        {loading && <div className="loading">Chargement...</div>}
-
-        {!loading && activeTab === 'dashboard' && (
+    switch (activeTab) {
+      case 'dashboard':
+        return (
           <Dashboard stats={stats} shootings={shootings} payments={payments} />
-        )}
+        );
 
-        {!loading && activeTab === 'new' && (
+      case 'new':
+        return (
           <NewOption
             onSelectShooting={() => setActiveTab('new-shooting')}
             onSelectPayment={() => setActiveTab('new-payment')}
           />
-        )}
+        );
 
-        {!loading && activeTab === 'new-shooting' && !editingId && (
-          <ShootingForm 
+      case 'new-shooting':
+        return (
+          <ShootingForm
             onSubmit={handleAddShooting}
             types={types}
             onAddType={handleAddType}
           />
-        )}
+        );
 
-        {!loading && activeTab === 'new-payment' && (
+      case 'new-payment':
+        return (
           <PaymentForm
-            shootings={shootings.filter(s => !s.paye)}
+            shootings={shootings.filter((s) => !s.paye)}
             onSubmit={handleAddPayment}
           />
-        )}
+        );
 
-        {!loading && activeTab === 'list-shootings' && (
+      case 'shootings':
+        return (
           <ShootingList
             shootings={shootings}
             types={types}
             onEdit={(id) => {
               setEditingId(id);
-              setActiveTab('new-shooting');
+              setActiveTab('edit-shooting');
             }}
             onDelete={handleDeleteShooting}
             onUpdate={handleUpdateShooting}
             editingId={editingId}
           />
-        )}
+        );
 
-        {!loading && activeTab === 'list-payments' && (
-          <PaymentList
-            payments={payments}
-            onDelete={handleDeletePayment}
-          />
-        )}
-
-        {!loading && activeTab === 'export' && (
-          <ExportForm
-            shootings={shootings}
-            payments={payments}
-          />
-        )}
-
-        {!loading && editingId && activeTab === 'new-shooting' && (
+      case 'edit-shooting':
+        return editingId ? (
           <ShootingForm
             onSubmit={(data) => {
               handleUpdateShooting(editingId, data);
             }}
-            initialData={shootings.find(s => s.id === editingId)}
+            initialData={shootings.find((s) => s.id === editingId)}
             isEditing={true}
             types={types}
             onAddType={handleAddType}
           />
-        )}
-      </main>
+        ) : null;
 
-      {/* Footer */}
+      case 'payments':
+        return (
+          <PaymentList payments={payments} onDelete={handleDeletePayment} />
+        );
+
+      case 'export':
+        return <ExportForm shootings={shootings} payments={payments} />;
+
+      default:
+        return (
+          <Dashboard stats={stats} shootings={shootings} payments={payments} />
+        );
+    }
+  };
+
+  return (
+    <div className="app">
+      {/* HEADER */}
+      <header className="app-header">
+        <div className="header-content">
+          <h1>Shooting Manager</h1>
+          <p className="tagline">Gère tes shoots, suis ton argent</p>
+        </div>
+      </header>
+
+      {/* NAVIGATION TABS (Desktop only) */}
+      {!isMobile && (
+        <nav className="nav-tabs">
+          <button
+            className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            Dashboard
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'new' ? 'active' : ''}`}
+            onClick={() => setActiveTab('new')}
+          >
+            Nouveau
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'shootings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('shootings')}
+          >
+            Shoots
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'payments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('payments')}
+          >
+            Paiements
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'export' ? 'active' : ''}`}
+            onClick={() => setActiveTab('export')}
+          >
+            Exporter
+          </button>
+        </nav>
+      )}
+
+      {/* MAIN CONTENT */}
+      <main className="main-content">{renderContent()}</main>
+
+      {/* FOOTER */}
       <footer className="app-footer">
-        <p>🌟 Built with React & Node.js | v1.0</p>
+        <p>Built with React & Supabase | v2.0</p>
       </footer>
+
+      {/* BOTTOM NAVIGATION (Mobile only) */}
+      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }

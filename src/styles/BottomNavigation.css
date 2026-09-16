@@ -1,0 +1,151 @@
+/* ========================================
+   BOTTOM NAVIGATION - LIQUID GLASS EFFECT
+   ======================================== */
+
+.bottom-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: transparent;
+  z-index: 50;
+  display: none;
+  padding-bottom: 20px;
+  pointer-events: none;
+}
+
+/* ✅ Visible uniquement sur mobile (<769px) */
+@media (max-width: 768px) {
+  .bottom-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+  }
+}
+
+.nav-container {
+  pointer-events: all;
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Animation d'arrivée */
+@keyframes slideUp {
+  from {
+    transform: translateY(120px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   BOUTON DE NAVIGATION
+   ======================================== */
+
+.nav-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: rgba(59, 130, 246, 0.6);
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hover effect */
+.nav-button:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: rgb(59, 130, 246);
+}
+
+/* Active state */
+.nav-button.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: rgb(59, 130, 246);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Ripple effect au click */
+.nav-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  pointer-events: none;
+}
+
+.nav-button:active::after {
+  width: 100px;
+  height: 100px;
+}
+
+/* ========================================
+   ICONE
+   ======================================== */
+
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: opacity(0.7);
+  transition: filter 0.3s ease;
+}
+
+.nav-button.active .nav-icon {
+  filter: opacity(1) drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+}
+
+/* Label */
+.nav-label {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ========================================
+   RESPONSIVE DESKTOP
+   ======================================== */
+
+@media (min-width: 769px) {
+  .bottom-navigation {
+    display: none !important;
+  }
+
+  /* Sur desktop, on peut garder les onglets classiques en haut */
+}
+
+@media (max-width: 640px) {
+  .nav-label {
+    display: none;
+  }
+
+  .nav-button {
+    padding: 12px 12px;
+  }
+}
