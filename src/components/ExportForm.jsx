@@ -11,7 +11,7 @@ import htmlDocx from 'html-docx-js/dist/html-docx';
 
 function ExportForm({ shootings, payments }) {
   const [exportType, setExportType] = useState('shootings');
-  const [selectedMonthForActivity, setSelectedMonthForActivity] = useState('');
+  const [expandedMonths, setExpandedMonths] = useState({}); // Pour les menus dépliants style accordéon
   const [selectedShootingsForActivity, setSelectedShootingsForActivity] = useState([]);
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [format, setFormat] = useState('pdf');
@@ -115,7 +115,6 @@ function ExportForm({ shootings, payments }) {
   // ✅ EXPORT EXCEL
   const exportToExcel = () => {
     const data = getFilteredData();
-    
     if (data.length === 0) {
       alert('Aucune donnée à exporter');
       return;
@@ -142,14 +141,8 @@ function ExportForm({ shootings, payments }) {
     );
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      exportType === 'shootings' ? 'Shootings' : 'Paiements'
-    );
-
-    const filename = `${exportType === 'shootings' ? 'shootings' : 'paiements'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(workbook, filename);
+    XLSX.utils.book_append_sheet(workbook, worksheet, exportType === 'shootings' ? 'Shootings' : 'Paiements');
+    XLSX.writeFile(workbook, `${exportType === 'shootings' ? 'shootings' : 'paiements'}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // ✅ EXPORT PDF
@@ -160,14 +153,12 @@ function ExportForm({ shootings, payments }) {
     }
 
     const data = getFilteredData();
-    
     if (data.length === 0) {
       alert('Aucune donnée à exporter');
       return;
     }
 
     const doc = new jsPDF();
-    
     doc.addFont(`data:font/ttf;base64,${fontBase64}`, 'NotoSansKR', 'normal');
     doc.setFont('NotoSansKR');
     
@@ -177,21 +168,14 @@ function ExportForm({ shootings, payments }) {
 
     if (exportType === 'shootings') {
       const dataByMonth = groupByMonth(data, 'date');
-      const sortedMonths = Object.keys(dataByMonth).sort();
-
-      sortedMonths.forEach((monthKey) => {
-        if (!isFirstPage) {
-          doc.addPage();
-        }
+      Object.keys(dataByMonth).sort().forEach((monthKey) => {
+        if (!isFirstPage) doc.addPage();
         isFirstPage = false;
 
         const monthData = dataByMonth[monthKey];
-        const monthHeader = getMonthHeader(monthKey);
-        
         doc.setFontSize(16);
         doc.setTextColor(59, 130, 246);
-        doc.text(monthHeader, 14, 15);
-        
+        doc.text(getMonthHeader(monthKey), 14, 15);
         doc.setTextColor(0, 0, 0);
         
         const tableData = monthData.map(s => [
@@ -208,165 +192,52 @@ function ExportForm({ shootings, payments }) {
         grandTotalAfter += monthTotalAfter;
 
         if (showMonthlyTotal) {
-          tableData.push([
-            'TOTAL',
-            '',
-            '',
-            formatKoreanAmount(monthTotalBefore),
-            formatKoreanAmount(monthTotalAfter)
-          ]);
+          tableData.push(['TOTAL', '', '', formatKoreanAmount(monthTotalBefore), formatKoreanAmount(monthTotalAfter)]);
         }
 
         autoTable(doc, {
-          head: [[
-            'Name\n이름',
-            'Date\n날짜',
-            'Type\n타입',
-            'Amount\n금액',
-            'Amount Post Taxes\n세후금액'
-          ]],
+          head: [['Name\n이름', 'Date\n날짜', 'Type\n타입', 'Amount\n금액', 'Amount Post Taxes\n세후금액']],
           body: tableData,
           startY: 25,
           margin: 14,
           theme: 'grid',
-          headStyles: {
-            fillColor: [59, 130, 246],
-            textColor: 255,
-            fontStyle: 'bold',
-            fontSize: 9,
-            halign: 'center',
-            font: 'NotoSansKR'
-          },
-          bodyStyles: {
-            fontSize: 9,
-            textColor: 0,
-            font: 'NotoSansKR'
-          },
-          alternateRowStyles: {
-            fillColor: [249, 250, 251]
-          }
-        });
-      });
-    } else {
-      const dataByPaymentMonth = {};
-      
-      data.forEach(payment => {
-        const paymentDate = new Date(payment.date_paiement);
-        const year = paymentDate.getFullYear();
-        const month = String(paymentDate.getMonth() + 1).padStart(2, '0');
-        const key = `${year}-${month}`;
-        
-        if (!dataByPaymentMonth[key]) {
-          dataByPaymentMonth[key] = [];
-        }
-        
-        if (payment.shootings && Array.isArray(payment.shootings)) {
-          dataByPaymentMonth[key].push(...payment.shootings);
-        }
-      });
-
-      const sortedMonths = Object.keys(dataByPaymentMonth).sort();
-
-      sortedMonths.forEach((monthKey) => {
-        if (!isFirstPage) {
-          doc.addPage();
-        }
-        isFirstPage = false;
-
-        const monthData = dataByPaymentMonth[monthKey];
-        const monthHeader = getMonthHeader(monthKey);
-        
-        doc.setFontSize(16);
-        doc.setTextColor(16, 185, 129);
-        doc.text(monthHeader, 14, 15);
-        
-        doc.setTextColor(0, 0, 0);
-        
-        const tableData = monthData.map(s => [
-          s.nom,
-          formatKoreanDate(s.date),
-          s.type_nom || '-',
-          formatKoreanAmount(s.montant),
-          formatKoreanAmount(s.montant_final)
-        ]);
-
-        const monthTotalBefore = monthData.reduce((sum, s) => sum + s.montant, 0);
-        const monthTotalAfter = monthData.reduce((sum, s) => sum + s.montant_final, 0);
-        grandTotalBefore += monthTotalBefore;
-        grandTotalAfter += monthTotalAfter;
-
-        if (showMonthlyTotal) {
-          tableData.push([
-            'TOTAL',
-            '',
-            '',
-            formatKoreanAmount(monthTotalBefore),
-            formatKoreanAmount(monthTotalAfter)
-          ]);
-        }
-
-        autoTable(doc, {
-          head: [[
-            'Name\n이름',
-            'Date\n날짜',
-            'Type\n타입',
-            'Amount\n금액',
-            'Amount Post Taxes\n세후금액'
-          ]],
-          body: tableData,
-          startY: 25,
-          margin: 14,
-          theme: 'grid',
-          headStyles: {
-            fillColor: [16, 185, 129],
-            textColor: 255,
-            fontStyle: 'bold',
-            fontSize: 9,
-            halign: 'center',
-            font: 'NotoSansKR'
-          },
-          bodyStyles: {
-            fontSize: 9,
-            textColor: 0,
-            font: 'NotoSansKR'
-          }
+          headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold', fontSize: 9, halign: 'center', font: 'NotoSansKR' },
+          bodyStyles: { fontSize: 9, textColor: 0, font: 'NotoSansKR' }
         });
       });
     }
 
     if (showFinalTotal) {
       doc.addPage();
-      const periodText = getMonthPeriod();
       doc.setFontSize(14);
       doc.setTextColor(59, 130, 246);
-      doc.text(`Total Final : ${periodText}`, 14, 15);
+      doc.text(`Total Final : ${getMonthPeriod()}`, 14, 15);
       
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(12);
-      
-      const finalTableData = [
-        ['Total Before Taxes', '세금 전 총액', formatKoreanAmount(grandTotalBefore)],
-        ['Total After Taxes', '세후 총액', formatKoreanAmount(grandTotalAfter)]
-      ];
-
       autoTable(doc, {
-        body: finalTableData,
+        body: [
+          ['Total Before Taxes', '세금 전 총액', formatKoreanAmount(grandTotalBefore)],
+          ['Total After Taxes', '세후 총액', formatKoreanAmount(grandTotalAfter)]
+        ],
         startY: 30,
         margin: 14,
         theme: 'plain'
       });
     }
 
-    const filename = `${exportType === 'shootings' ? 'shootings' : 'paiements'}_${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(filename);
+    doc.save(`shootings_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const toggleMonth = (monthNum) => {
     setSelectedMonths(prev =>
-      prev.includes(monthNum)
-        ? prev.filter(m => m !== monthNum)
-        : [...prev, monthNum]
+      prev.includes(monthNum) ? prev.filter(m => m !== monthNum) : [...prev, monthNum]
     );
+  };
+
+  const toggleAccordion = (monthNum) => {
+    setExpandedMonths(prev => ({
+      ...prev,
+      [monthNum]: !prev[monthNum]
+    }));
   };
 
   const toggleShootingSelection = (id) => {
@@ -375,6 +246,7 @@ function ExportForm({ shootings, payments }) {
     );
   };
 
+  // ✅ GENERATION ACTIVITY PLAN (.doc/.odt propre sans corruption)
   const generateActivityPlanODT = () => {
     const chosenShootings = shootings.filter(s => selectedShootingsForActivity.includes(s.id));
     
@@ -398,7 +270,7 @@ function ExportForm({ shootings, payments }) {
       </style>
       </head>
       <body>
-        <h2>Activity Plan and Proof of Scheduled Activities 2023</h2>
+        <h2>Activity Plan and Proof of Scheduled Activities ${new Date().getFullYear()}</h2>
         <div class="subtitle">Angeloni Luciana Maria (Lucy)</div>
     `;
 
@@ -430,11 +302,12 @@ function ExportForm({ shootings, payments }) {
 
     htmlContent += `</body></html>`;
 
+    // Utilisation de l'extension .doc pour garantir l'ouverture sans erreur de corruption
     const converted = htmlDocx.asBlob(htmlContent);
     const url = URL.createObjectURL(converted);
     const downloadLink = document.createElement('a');
     downloadLink.href = url;
-    downloadLink.download = `Activity_Plan_${new Date().getFullYear()}.odt`;
+    downloadLink.download = `Activity_Plan_${new Date().getFullYear()}.doc`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
@@ -445,12 +318,8 @@ function ExportForm({ shootings, payments }) {
       alert('Sélectionne au moins un mois');
       return;
     }
-
-    if (format === 'pdf') {
-      exportToPDF();
-    } else if (format === 'excel') {
-      exportToExcel();
-    }
+    if (format === 'pdf') exportToPDF();
+    else if (format === 'excel') exportToExcel();
   };
 
   return (
@@ -458,71 +327,83 @@ function ExportForm({ shootings, payments }) {
       <h2>📥 Exporter les données & Activity Plan</h2>
 
       <div className="export-form">
-        {/* Choix du type d'export incluant Activity Plan */}
+        {/* Type d'export */}
         <div className="form-section">
           <h3>1️⃣ Type d'export</h3>
           <div className="radio-group">
             <label>
               <input type="radio" value="shootings" checked={exportType === 'shootings'} onChange={() => setExportType('shootings')} />
-              Shootings 
+              📋 Shootings classiques
             </label>
             <label>
               <input type="radio" value="payments" checked={exportType === 'payments'} onChange={() => setExportType('payments')} />
-              Paiements
+              💳 Paiements
             </label>
             <label>
               <input type="radio" value="activity-plan" checked={exportType === 'activity-plan'} onChange={() => setExportType('activity-plan')} />
-              Activity Plan (Visa)
+              📄 Activity Plan (Visa)
             </label>
           </div>
         </div>
 
-        {/* SECTION SPÉCIFIQUE ACTIVITY PLAN */}
+        {/* SECTION ACTIVITY PLAN AVEC ACCORDÉONS DÉPLIANTS PAR MOIS */}
         {exportType === 'activity-plan' ? (
           <div className="form-section">
-            <h3>📅 Sélectionner un mois pour l'Activity Plan</h3>
-            <select 
-              value={selectedMonthForActivity} 
-              onChange={(e) => {
-                setSelectedMonthForActivity(e.target.value);
-                setSelectedShootingsForActivity([]);
-              }}
-              style={{ padding: '8px', width: '100%', marginBottom: '15px' }}
-            >
-              <option value="">-- Choisir un mois --</option>
-              {months.map(m => (
-                <option key={m.num} value={m.num}>{m.name}</option>
-              ))}
-            </select>
+            <h3>📅 Sélectionner les shoots par mois</h3>
+            <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '15px' }}>
+              Clique sur un mois pour le déplier, puis coche les shootings à inclure dans le rapport.
+            </p>
 
-            {selectedMonthForActivity !== '' && (
-              <div style={{ maxHeight: '250px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px' }}>
-                <h4>Cochez les shoots à inclure :</h4>
-                {shootings
-                  .filter(s => new Date(s.date).getMonth() === parseInt(selectedMonthForActivity))
-                  .map(s => (
-                    <label key={s.id} style={{ display: 'block', marginBottom: '8px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedShootingsForActivity.includes(s.id)}
-                        onChange={() => toggleShootingSelection(s.id)}
-                        style={{ marginRight: '8px' }}
-                      />
-                      {s.nom} ({s.date ? s.date.split('T')[0] : ''}) - {s.brand_name || 'Sans marque'}
-                    </label>
-                  ))}
-              </div>
-            )}
+            <div className="accordion-container">
+              {months.map(m => {
+                const monthShootings = shootings.filter(s => new Date(s.date).getMonth() === m.num);
+                const isExpanded = expandedMonths[m.num];
+
+                return (
+                  <div key={m.num} style={{ marginBottom: '10px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fff', overflow: 'hidden' }}>
+                    {/* En-tête cliquable du mois */}
+                    <div 
+                      onClick={() => toggleAccordion(m.num)}
+                      style={{ padding: '12px 15px', background: '#f9fafb', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold' }}
+                    >
+                      <span>📅 {m.name} ({monthShootings.length} shoots)</span>
+                      <span>{isExpanded ? '▲' : '▼'}</span>
+                    </div>
+
+                    {/* Contenu dépliant */}
+                    {isExpanded && (
+                      <div style={{ padding: '12px 15px', borderTop: '1px solid #e5e7eb' }}>
+                        {monthShootings.length === 0 ? (
+                          <p style={{ color: '#9ca3af', fontStyle: 'italic', fontSize: '0.9rem' }}>Aucun shooting ce mois-ci.</p>
+                        ) : (
+                          monthShootings.map(s => (
+                            <label key={s.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', cursor: 'pointer', fontSize: '0.95rem' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={selectedShootingsForActivity.includes(s.id)}
+                                onChange={() => toggleShootingSelection(s.id)}
+                                style={{ marginRight: '10px', width: '16px', height: '16px' }}
+                              />
+                              <span><strong>{s.nom}</strong> ({s.date ? s.date.split('T')[0] : ''}) - <span style={{ color: '#4b5563' }}>{s.brand_name || 'Sans marque'}</span></span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
             <div className="export-actions" style={{ marginTop: '20px' }}>
               <button onClick={generateActivityPlanODT} className="btn-export">
-                ✨ Générer l'Activity Plan (.odt)
+                ✨ Générer l'Activity Plan (.doc)
               </button>
             </div>
           </div>
         ) : (
           <div>
-            {/* Sélection des mois */}
+            {/* Sélection des mois pour PDF / Excel */}
             <div className="form-section">
               <h3>2️⃣ Quels mois ?</h3>
               <div className="months-grid">
@@ -562,69 +443,14 @@ function ExportForm({ shootings, payments }) {
                   📊 Excel
                 </label>
               </div>
-              {format === 'pdf' && !fontBase64 && (
-                <p style={{ color: '#F59E0B', fontSize: '0.9rem' }}>
-                  ⏳ Police coréenne en cours de chargement...
-                </p>
-              )}
             </div>
-
-            {/* Options de totaux (PDF uniquement) */}
-            {format === 'pdf' && (
-              <div className="form-section">
-                <h3>4️⃣ Options</h3>
-                <div className="checkbox-group">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={showMonthlyTotal}
-                      onChange={(e) => setShowMonthlyTotal(e.target.checked)}
-                    />
-                    Total mensuel
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={showFinalTotal}
-                      onChange={(e) => setShowFinalTotal(e.target.checked)}
-                    />
-                    Total final
-                  </label>
-                </div>
-              </div>
-            )}
 
             {/* Bouton export */}
             <div className="export-actions">
-              <button 
-                onClick={handleExport} 
-                className="btn-export"
-                disabled={format === 'pdf' && !fontBase64}
-              >
+              <button onClick={handleExport} className="btn-export">
                 ✅ Exporter ({selectedMonths.length} mois)
               </button>
             </div>
-
-            {/* Aperçu */}
-            {selectedMonths.length > 0 && (
-              <div className="export-preview">
-                <h4>📊 Aperçu</h4>
-                {exportType === 'shootings' ? (
-                  <p>
-                    {shootings.filter(s => selectedMonths.includes(new Date(s.date).getMonth())).length} shoots à exporter
-                  </p>
-                ) : (
-                  <p>
-                    {payments.filter(p => selectedMonths.includes(new Date(p.date_paiement).getMonth())).length} paiements à exporter
-                    {(() => {
-                      const filteredPayments = payments.filter(p => selectedMonths.includes(new Date(p.date_paiement).getMonth()));
-                      const totalShootings = filteredPayments.reduce((sum, p) => sum + (p.shootings?.length || 0), 0);
-                      return totalShootings > 0 ? ` (${totalShootings} shoots associés)` : ' (aucun shoot associé)';
-                    })()}
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>
