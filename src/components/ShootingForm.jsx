@@ -14,7 +14,11 @@ function ShootingForm({ onSubmit, initialData = null, isEditing = false, types =
     pourcentage_agence: 15,
     type_id: types.length > 0 ? types[0].id : 1,
     notes: '',
-    paye: false
+    paye: false,
+    brand_name: '',
+    project_name: '',
+    role: '',
+    location: ''
   });
 
   const [showTypeForm, setShowTypeForm] = useState(false);
@@ -58,13 +62,13 @@ function ShootingForm({ onSubmit, initialData = null, isEditing = false, types =
   useEffect(() => {
     if (formData.montant) {
       let final = parseFloat(formData.montant);
-      
+
       if (formData.categorie === 'agence') {
         const apresImpots = final * TAX_RATE;
         const fraisAgence = final * (formData.pourcentage_agence / 100);
         final = apresImpots - fraisAgence;
       }
-      
+
       setMontantFinal(final);
     } else {
       setMontantFinal(0);
@@ -81,7 +85,7 @@ function ShootingForm({ onSubmit, initialData = null, isEditing = false, types =
 
   const handleAddType = async (e) => {
     e.preventDefault();
-    
+
     if (!newType.nom.trim()) {
       alert('Ajoute un nom pour le type');
       return;
@@ -94,7 +98,7 @@ function ShootingForm({ onSubmit, initialData = null, isEditing = false, types =
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!formData.nom || !formData.date || !formData.montant || !formData.type_id) {
       alert('Veuillez remplir tous les champs obligatoires');
       return;
@@ -277,7 +281,7 @@ function ShootingForm({ onSubmit, initialData = null, isEditing = false, types =
           <div className="montant-final-value">
             {formatWon(montantFinal)}
           </div>
-          
+
           {montantBrut > 0 && formData.categorie === 'agence' && (
             <div className="deductions-breakdown">
               <p className="deduction-line">
@@ -331,6 +335,32 @@ function ShootingForm({ onSubmit, initialData = null, isEditing = false, types =
             <span>Marqué comme payé</span>
           </label>
         </div>
+
+        {/* Nouveaux champs pour le visa / Activity Plan */}
+        <div style={{ marginTop: '20px', borderTop: '1px solid #e5e7eb', paddingTop: '15px' }}>
+          <h4 style={{ marginBottom: '10px', color: '#4b5563' }}>Informations Visa / Activity Plan (Optionnel)</h4>
+
+          <div className="form-group">
+            <label htmlFor="brand_name">Brand Name</label>
+            <input type="text" id="brand_name" name="brand_name" placeholder="Ex: Samsung, VPAM" value={formData.brand_name} onChange={handleChange} />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="project_name">Project Name</label>
+            <input type="text" id="project_name" name="project_name" placeholder="Ex: Portable SSD T5" value={formData.project_name} onChange={handleChange} />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="role">Role</label>
+            <input type="text" id="role" name="role" placeholder="Ex: Sub, Main" value={formData.role} onChange={handleChange} />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="location">Location</label>
+            <input type="text" id="location" name="location" placeholder="Ex: Seoul" value={formData.location} onChange={handleChange} />
+          </div>
+        </div>
+
 
         {/* Buttons */}
         <div className="form-actions">

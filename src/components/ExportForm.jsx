@@ -7,9 +7,12 @@ import fontFile from '../fonts/NotoSansKR.ttf';
 // eslint-disable-next-line no-unused-vars
 import { formatWon } from '../utils/formatters';
 import '../styles/ExportForm.css';
+import htmlDocx from 'html-docx-js/dist/html-docx';
 
 function ExportForm({ shootings, payments }) {
   const [exportType, setExportType] = useState('shootings');
+  const [selectedMonthForActivity, setSelectedMonthForActivity] = useState('');
+  const [selectedShootingsForActivity, setSelectedShootingsForActivity] = useState([]);
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [format, setFormat] = useState('pdf');
   const [fontBase64, setFontBase64] = useState(null);
@@ -199,7 +202,6 @@ function ExportForm({ shootings, payments }) {
           formatKoreanAmount(s.montant_final)
         ]);
 
-        // Calculer les totaux mensuels
         const monthTotalBefore = monthData.reduce((sum, s) => sum + s.montant, 0);
         const monthTotalAfter = monthData.reduce((sum, s) => sum + s.montant_final, 0);
         grandTotalBefore += monthTotalBefore;
@@ -242,24 +244,10 @@ function ExportForm({ shootings, payments }) {
           },
           alternateRowStyles: {
             fillColor: [249, 250, 251]
-          },
-          didDrawCell: function(data) {
-            if (data.row.index === tableData.length - 1 && showMonthlyTotal) {
-              data.cell.styles.fontStyle = 'bold';
-              data.cell.styles.fillColor = [229, 231, 235];
-            }
-          },
-          columnStyles: {
-            0: { halign: 'left' },
-            1: { halign: 'center' },
-            2: { halign: 'center' },
-            3: { halign: 'right' },
-            4: { halign: 'right' }
           }
         });
       });
     } else {
-      // Export paiements - grouper par DATE DE PAIEMENT
       const dataByPaymentMonth = {};
       
       data.forEach(payment => {
@@ -302,7 +290,6 @@ function ExportForm({ shootings, payments }) {
           formatKoreanAmount(s.montant_final)
         ]);
 
-        // Calculer les totaux mensuels
         const monthTotalBefore = monthData.reduce((sum, s) => sum + s.montant, 0);
         const monthTotalAfter = monthData.reduce((sum, s) => sum + s.montant_final, 0);
         grandTotalBefore += monthTotalBefore;
@@ -342,31 +329,13 @@ function ExportForm({ shootings, payments }) {
             fontSize: 9,
             textColor: 0,
             font: 'NotoSansKR'
-          },
-          alternateRowStyles: {
-            fillColor: [240, 253, 250]
-          },
-          didDrawCell: function(data) {
-            if (data.row.index === tableData.length - 1 && showMonthlyTotal) {
-              data.cell.styles.fontStyle = 'bold';
-              data.cell.styles.fillColor = [217, 243, 230];
-            }
-          },
-          columnStyles: {
-            0: { halign: 'left' },
-            1: { halign: 'center' },
-            2: { halign: 'center' },
-            3: { halign: 'right' },
-            4: { halign: 'right' }
           }
         });
       });
     }
 
-    // ✅ PAGE TOTAL FINAL
     if (showFinalTotal) {
       doc.addPage();
-      
       const periodText = getMonthPeriod();
       doc.setFontSize(14);
       doc.setTextColor(59, 130, 246);
@@ -384,17 +353,7 @@ function ExportForm({ shootings, payments }) {
         body: finalTableData,
         startY: 30,
         margin: 14,
-        theme: 'plain',
-        bodyStyles: {
-          fontSize: 11,
-          textColor: 0,
-          font: 'NotoSansKR'
-        },
-        columnStyles: {
-          0: { halign: 'left', fontStyle: 'bold', textColor: [59, 130, 246] },
-          1: { halign: 'center', fontStyle: 'bold', textColor: [59, 130, 246] },
-          2: { halign: 'right', fontStyle: 'bold', textColor: [0, 0, 0] }
-        }
+        theme: 'plain'
       });
     }
 
@@ -408,6 +367,77 @@ function ExportForm({ shootings, payments }) {
         ? prev.filter(m => m !== monthNum)
         : [...prev, monthNum]
     );
+  };
+
+  const toggleShootingSelection = (id) => {
+    setSelectedShootingsForActivity(prev =>
+      prev.includes(id) ? prev.filter(sId => sId !== id) : [...prev, id]
+    );
+  };
+
+  const generateActivityPlanODT = () => {
+    const chosenShootings = shootings.filter(s => selectedShootingsForActivity.includes(s.id));
+    
+    if (chosenShootings.length === 0) {
+      alert('Veuillez cocher au moins un shooting');
+      return;
+    }
+
+    let htmlContent = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>Activity Plan</title>
+      <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        h2 { text-decoration: underline; font-size: 16px; margin-bottom: 5px; }
+        .subtitle { font-weight: bold; font-size: 14px; margin-bottom: 30px; text-decoration: underline; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 5px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; font-size: 12px; }
+        th { background-color: #d1d5db; }
+        .ref { text-align: left; font-size: 12px; margin-bottom: 40px; font-weight: bold; }
+        .item-block { text-align: left; margin-bottom: 30px; }
+      </style>
+      </head>
+      <body>
+        <h2>Activity Plan and Proof of Scheduled Activities 2023</h2>
+        <div class="subtitle">Angeloni Luciana Maria (Lucy)</div>
+    `;
+
+    chosenShootings.forEach((s, index) => {
+      const dateFormatted = s.date ? s.date.split('T')[0].replace(/-/g, '/') : '';
+      htmlContent += `
+        <div class="item-block">
+          <p><strong>${index + 1})</strong></p>
+          <table>
+            <tr>
+              <th>Brand Name</th>
+              <th>Project Name</th>
+              <th>Role</th>
+              <th>Date</th>
+              <th>Location</th>
+            </tr>
+            <tr>
+              <td>${s.brand_name || '-'}</td>
+              <td>${s.project_name || '-'}</td>
+              <td>${s.role || '-'}</td>
+              <td>${dateFormatted}</td>
+              <td>${s.location || '-'}</td>
+            </tr>
+          </table>
+          <div class="ref">Reference: </div>
+        </div>
+      `;
+    });
+
+    htmlContent += `</body></html>`;
+
+    const converted = htmlDocx.asBlob(htmlContent);
+    const url = URL.createObjectURL(converted);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = `Activity_Plan_${new Date().getFullYear()}.odt`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   };
 
   const handleExport = () => {
@@ -425,134 +455,175 @@ function ExportForm({ shootings, payments }) {
 
   return (
     <div className="export-form-container">
-      <h2>📥 Exporter les données</h2>
+      <h2>📥 Exporter les données & Activity Plan</h2>
 
       <div className="export-form">
-        {/* Type d'export */}
+        {/* Choix du type d'export incluant Activity Plan */}
         <div className="form-section">
-          <h3>1️⃣ Quel type de données ?</h3>
+          <h3>1️⃣ Type d'export</h3>
           <div className="radio-group">
             <label>
-              <input
-                type="radio"
-                value="shootings"
-                checked={exportType === 'shootings'}
-                onChange={(e) => setExportType(e.target.value)}
-              />
-              📋 Shootings
+              <input type="radio" value="shootings" checked={exportType === 'shootings'} onChange={() => setExportType('shootings')} />
+              Shootings 
             </label>
             <label>
-              <input
-                type="radio"
-                value="payments"
-                checked={exportType === 'payments'}
-                onChange={(e) => setExportType(e.target.value)}
-              />
-              💳 Paiements (shootings associés)
+              <input type="radio" value="payments" checked={exportType === 'payments'} onChange={() => setExportType('payments')} />
+              Paiements
+            </label>
+            <label>
+              <input type="radio" value="activity-plan" checked={exportType === 'activity-plan'} onChange={() => setExportType('activity-plan')} />
+              Activity Plan (Visa)
             </label>
           </div>
         </div>
 
-        {/* Sélection des mois */}
-        <div className="form-section">
-          <h3>2️⃣ Quels mois ?</h3>
-          <div className="months-grid">
-            {months.map(month => (
-              <label key={month.num} className="month-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedMonths.includes(month.num)}
-                  onChange={() => toggleMonth(month.num)}
-                />
-                <span>{month.name}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Format d'export */}
-        <div className="form-section">
-          <h3>3️⃣ Format ?</h3>
-          <div className="radio-group">
-            <label>
-              <input
-                type="radio"
-                value="pdf"
-                checked={format === 'pdf'}
-                onChange={(e) => setFormat(e.target.value)}
-              />
-              📄 PDF (formaté par mois)
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="excel"
-                checked={format === 'excel'}
-                onChange={(e) => setFormat(e.target.value)}
-              />
-              📊 Excel
-            </label>
-          </div>
-          {format === 'pdf' && !fontBase64 && (
-            <p style={{ color: '#F59E0B', fontSize: '0.9rem' }}>
-              ⏳ Police coréenne en cours de chargement...
-            </p>
-          )}
-        </div>
-
-        {/* Options de totaux (PDF uniquement) */}
-        {format === 'pdf' && (
+        {/* SECTION SPÉCIFIQUE ACTIVITY PLAN */}
+        {exportType === 'activity-plan' ? (
           <div className="form-section">
-            <h3>4️⃣ Options</h3>
-            <div className="checkbox-group">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showMonthlyTotal}
-                  onChange={(e) => setShowMonthlyTotal(e.target.checked)}
-                />
-                Total mensuel
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showFinalTotal}
-                  onChange={(e) => setShowFinalTotal(e.target.checked)}
-                />
-                Total final
-              </label>
+            <h3>📅 Sélectionner un mois pour l'Activity Plan</h3>
+            <select 
+              value={selectedMonthForActivity} 
+              onChange={(e) => {
+                setSelectedMonthForActivity(e.target.value);
+                setSelectedShootingsForActivity([]);
+              }}
+              style={{ padding: '8px', width: '100%', marginBottom: '15px' }}
+            >
+              <option value="">-- Choisir un mois --</option>
+              {months.map(m => (
+                <option key={m.num} value={m.num}>{m.name}</option>
+              ))}
+            </select>
+
+            {selectedMonthForActivity !== '' && (
+              <div style={{ maxHeight: '250px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px' }}>
+                <h4>Cochez les shoots à inclure :</h4>
+                {shootings
+                  .filter(s => new Date(s.date).getMonth() === parseInt(selectedMonthForActivity))
+                  .map(s => (
+                    <label key={s.id} style={{ display: 'block', marginBottom: '8px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedShootingsForActivity.includes(s.id)}
+                        onChange={() => toggleShootingSelection(s.id)}
+                        style={{ marginRight: '8px' }}
+                      />
+                      {s.nom} ({s.date ? s.date.split('T')[0] : ''}) - {s.brand_name || 'Sans marque'}
+                    </label>
+                  ))}
+              </div>
+            )}
+
+            <div className="export-actions" style={{ marginTop: '20px' }}>
+              <button onClick={generateActivityPlanODT} className="btn-export">
+                ✨ Générer l'Activity Plan (.odt)
+              </button>
             </div>
           </div>
-        )}
+        ) : (
+          <div>
+            {/* Sélection des mois */}
+            <div className="form-section">
+              <h3>2️⃣ Quels mois ?</h3>
+              <div className="months-grid">
+                {months.map(month => (
+                  <label key={month.num} className="month-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={selectedMonths.includes(month.num)}
+                      onChange={() => toggleMonth(month.num)}
+                    />
+                    <span>{month.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
-        {/* Bouton export */}
-        <div className="export-actions">
-          <button 
-            onClick={handleExport} 
-            className="btn-export"
-            disabled={format === 'pdf' && !fontBase64}
-          >
-            ✅ Exporter ({selectedMonths.length} mois)
-          </button>
-        </div>
+            {/* Format d'export */}
+            <div className="form-section">
+              <h3>3️⃣ Format ?</h3>
+              <div className="radio-group">
+                <label>
+                  <input
+                    type="radio"
+                    value="pdf"
+                    checked={format === 'pdf'}
+                    onChange={(e) => setFormat(e.target.value)}
+                  />
+                  📄 PDF (formaté par mois)
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    value="excel"
+                    checked={format === 'excel'}
+                    onChange={(e) => setFormat(e.target.value)}
+                  />
+                  📊 Excel
+                </label>
+              </div>
+              {format === 'pdf' && !fontBase64 && (
+                <p style={{ color: '#F59E0B', fontSize: '0.9rem' }}>
+                  ⏳ Police coréenne en cours de chargement...
+                </p>
+              )}
+            </div>
 
-        {/* Aperçu */}
-        {selectedMonths.length > 0 && (
-          <div className="export-preview">
-            <h4>📊 Aperçu</h4>
-            {exportType === 'shootings' ? (
-              <p>
-                {shootings.filter(s => selectedMonths.includes(new Date(s.date).getMonth())).length} shoots à exporter
-              </p>
-            ) : (
-              <p>
-                {payments.filter(p => selectedMonths.includes(new Date(p.date_paiement).getMonth())).length} paiements à exporter
-                {(() => {
-                  const filteredPayments = payments.filter(p => selectedMonths.includes(new Date(p.date_paiement).getMonth()));
-                  const totalShootings = filteredPayments.reduce((sum, p) => sum + (p.shootings?.length || 0), 0);
-                  return totalShootings > 0 ? ` (${totalShootings} shoots associés)` : ' (aucun shoot associé)';
-                })()}
-              </p>
+            {/* Options de totaux (PDF uniquement) */}
+            {format === 'pdf' && (
+              <div className="form-section">
+                <h3>4️⃣ Options</h3>
+                <div className="checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={showMonthlyTotal}
+                      onChange={(e) => setShowMonthlyTotal(e.target.checked)}
+                    />
+                    Total mensuel
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={showFinalTotal}
+                      onChange={(e) => setShowFinalTotal(e.target.checked)}
+                    />
+                    Total final
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Bouton export */}
+            <div className="export-actions">
+              <button 
+                onClick={handleExport} 
+                className="btn-export"
+                disabled={format === 'pdf' && !fontBase64}
+              >
+                ✅ Exporter ({selectedMonths.length} mois)
+              </button>
+            </div>
+
+            {/* Aperçu */}
+            {selectedMonths.length > 0 && (
+              <div className="export-preview">
+                <h4>📊 Aperçu</h4>
+                {exportType === 'shootings' ? (
+                  <p>
+                    {shootings.filter(s => selectedMonths.includes(new Date(s.date).getMonth())).length} shoots à exporter
+                  </p>
+                ) : (
+                  <p>
+                    {payments.filter(p => selectedMonths.includes(new Date(p.date_paiement).getMonth())).length} paiements à exporter
+                    {(() => {
+                      const filteredPayments = payments.filter(p => selectedMonths.includes(new Date(p.date_paiement).getMonth()));
+                      const totalShootings = filteredPayments.reduce((sum, p) => sum + (p.shootings?.length || 0), 0);
+                      return totalShootings > 0 ? ` (${totalShootings} shoots associés)` : ' (aucun shoot associé)';
+                    })()}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}
