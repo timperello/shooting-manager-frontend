@@ -16,7 +16,9 @@ function ExportForm({ shootings, payments }) {
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [format, setFormat] = useState('pdf');
   const [fontBase64, setFontBase64] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [showMonthlyTotal, setShowMonthlyTotal] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [showFinalTotal, setShowFinalTotal] = useState(false);
 
   useEffect(() => {
