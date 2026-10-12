@@ -273,7 +273,7 @@ function ExportForm({ shootings, payments }) {
       </head>
       <body>
         <h2>Activity Plan and Proof of Scheduled Activities ${new Date().getFullYear()}</h2>
-        <div class="subtitle">Angeloni Luciana Maria (Lucy)</div>
+        <div class="subtitle">PERELLO Timothée Janus Albert</div>
     `;
 
     chosenShootings.forEach((s, index) => {
